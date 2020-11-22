@@ -29,6 +29,11 @@ document.addEventListener("DOMContentLoaded", function(event) {
                 this.pomme.supprimePomme();
                 this.pomme = undefined;
             }
+            if (this.serpent !== undefined)
+            {
+                this.serpent.supprimeSerpent();
+                this.serpent = undefined;
+            }
 
         }
 
@@ -44,33 +49,105 @@ document.addEventListener("DOMContentLoaded", function(event) {
         constructor(_leJeu) {
             console.log("Création du serpent");
             this.leJeu = _leJeu;
-            document.addEventListener("keydown", this.verifTouche);
+            this.currentX = -1;
+            this.currentY = 0;
+            this.nextMoveX = 1;
+            this.nextMoveY = 0;
+            this.serpentLongueur = 1;
+            this.tblCarreSerpent = [];
+            this.touche = false;
+            this.vitesse = 250;
+            this.timing = setInterval(this.controleSerpent.bind(this), this.vitesse);
+            document.addEventListener("keydown", this.verifTouche.bind(this));
         }
 
         verifTouche(_evt)
         {
             var evt = _evt;
-            console.log(evt.key);
+            //console.log(evt.key);
             this.deplacement(evt.key);
         }
 
-        deplacement(dirCode) {
+        deplacement(dirCode)
+        {
+            switch (dirCode) {
+                case "ArrowLeft":
+                    this.nextMoveX = -1;
+                    this.nextMoveY = 0;
+                    break;
+                case "ArrowUp":
+                    this.nextMoveX = 0;
+                    this.nextMoveY = -1;
+                    break;
+                case "ArrowRight":
+                    this.nextMoveX = 1;
+                    this.nextMoveY = 0;
+                    break;
+                case "ArrowDown":
+                    this.nextMoveX = 0;
+                    this.nextMoveY = 1;
+                    break;
+            }
+            //console.log(this.nextMoveX, this.nextMoveY);
 
         }
 
         controleSerpent()
         {
+            var nextX = this.currentX + this.nextMoveX;
+            var nextY = this.currentY + this.nextMoveY;
+
+            this.tblCarreSerpent.forEach(function(element)
+            {
+                if (nextX === element[1] && nextY === element[2])
+                {
+                    console.log("Touche moi-même!");
+                    this.leJeu.finPartie();
+                    this.touche = true;
+                }
+            }.bind(this));
+
+            if (nextY < 0 || nextX < 0 || nextY > this.leJeu.grandeurGrille-1 || nextX > this.leJeu.grandeurGrille-1)
+            {
+                //console.log("Touche limite");
+                this.leJeu.finPartie();
+                this.touche = true;
+            }
+            if (!this.touche)
+            {
+                if (this.currentX === this.leJeu.pomme.pomme[1] && this.currentY === this.leJeu.pomme.pomme[2])
+                {
+                    this.serpentLongueur++;
+                    this.leJeu.affichagePointage(this.serpentLongueur);
+                    this.leJeu.pomme.supprimePomme();
+                    this.leJeu.pomme.ajoutePomme();
+                }
+                this.dessineCarre(nextX, nextY);
+                this.currentX = nextX;
+                this.currentY = nextY;
+            }
 
         }
 
         dessineCarre(x, y)
         {
-
+            var uneCarre = [this.leJeu.s.rect(x * this.leJeu.grandeurCarre, y * this.leJeu.grandeurCarre, this.leJeu.grandeurCarre, this.leJeu.grandeurCarre), x, y];
+            this.tblCarreSerpent.push(uneCarre);
+            if (this.tblCarreSerpent.length > this.serpentLongueur)
+            {
+                this.tblCarreSerpent[0][0].remove();
+                this.tblCarreSerpent.shift()
+            }
         }
 
         supprimeSerpent()
         {
-
+            clearInterval(this.timing);
+            while (this.tblCarreSerpent.length > 0)
+            {
+                this.tblCarreSerpent[0][0].remove();
+                this.tblCarreSerpent.shift();
+            }
         }
     }
 //La pomme
